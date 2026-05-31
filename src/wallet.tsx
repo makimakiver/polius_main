@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { useEffect, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   SuiClientProvider,
@@ -13,9 +12,9 @@ import {
 } from "@mysten/dapp-kit";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 
-// The ONE React surface in an otherwise vanilla-TS app. Instead of dapp-kit's
-// built-in ConnectButton/modal, this island renders a custom kami-styled button
-// and a hand-built connect modal driven by dapp-kit's wallet hooks.
+// Custom kami-styled wallet UI built on dapp-kit's wallet hooks (no built-in
+// ConnectButton/modal). `WalletProviders` supplies the React context for the
+// whole app; `WalletIsland` renders the trigger button + connect modal.
 
 type Wallet = ReturnType<typeof useWallets>[number];
 
@@ -26,6 +25,16 @@ const { networkConfig } = createNetworkConfig({
 });
 
 const queryClient = new QueryClient();
+
+export function WalletProviders({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
+        <WalletProvider autoConnect>{children}</WalletProvider>
+      </SuiClientProvider>
+    </QueryClientProvider>
+  );
+}
 
 function shortAddress(address: string): string {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
@@ -164,7 +173,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function WalletIsland() {
+export function WalletIsland() {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -172,19 +181,4 @@ function WalletIsland() {
       {open && <WalletModal onClose={() => setOpen(false)} />}
     </>
   );
-}
-
-/** Mount the wallet UI (button + modal) into `host`. Returns a teardown function. */
-export function mountWallet(host: HTMLElement): () => void {
-  const root: Root = createRoot(host);
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-        <WalletProvider autoConnect>
-          <WalletIsland />
-        </WalletProvider>
-      </SuiClientProvider>
-    </QueryClientProvider>
-  );
-  return () => root.unmount();
 }
