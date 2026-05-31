@@ -1,0 +1,27 @@
+{
+  "name": "pollius-lite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
+    "typescript": "^5.0.0",
+    "vite": "^7.0.0",
+    "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "@mysten/dapp-kit": "^1.0.6",
+    "@mysten/sui": "^2.17.0",
+    "@tanstack/react-query": "^5.100.14",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0"
+  }
+}
