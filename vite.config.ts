@@ -1,15 +1,8 @@
 import { defineConfig } from "vitest/config";
 
+// The official Vite scaffold ships no config file; this one exists only to point
+// Vitest at the node test environment. Build/dev use Vite 8 defaults.
 export default defineConfig({
-  clearScreen: false,
-  server: {
-    port: 1420,
-    strictPort: true
-  },
-  build: {
-    target: "es2022",
-    minify: "esbuild"
-  },
   test: {
     environment: "node"
   }
