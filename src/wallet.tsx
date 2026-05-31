@@ -1,22 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  ConnectButton,
   SuiClientProvider,
   WalletProvider,
   createNetworkConfig,
+  useWallets,
+  useConnectWallet,
+  useDisconnectWallet,
+  useCurrentWallet,
   useCurrentAccount
 } from "@mysten/dapp-kit";
-import type { ThemeVars } from "@mysten/dapp-kit";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
-import "@mysten/dapp-kit/dist/index.css";
 
-// The ONE React surface in an otherwise vanilla-TS app. @mysten/dapp-kit is
-// React-only, so it lives in an isolated island mounted into a single host node;
-// the connected account is bridged back to the vanilla app via an optional callback.
+// The ONE React surface in an otherwise vanilla-TS app. Instead of dapp-kit's
+// built-in ConnectButton/modal, this island renders a custom kami-styled button
+// and a hand-built connect modal driven by dapp-kit's wallet hooks.
 
-export type AccountListener = (address: string | null) => void;
+type Wallet = ReturnType<typeof useWallets>[number];
 
 const { networkConfig } = createNetworkConfig({
   testnet: { network: "testnet", url: getJsonRpcFullnodeUrl("testnet") },
@@ -26,86 +27,161 @@ const { networkConfig } = createNetworkConfig({
 
 const queryClient = new QueryClient();
 
-// "Civilised" kami theme for the dapp-kit ConnectButton + connect modal: warm
-// parchment surfaces, an ink-blue primary action, serif (Newsreader) hierarchy,
-// editorial radii, and a stronger overlay scrim so the modal reads as deliberate.
-const kamiTheme = {
-  blurs: {
-    modalOverlay: "blur(3px)"
-  },
-  backgroundColors: {
-    primaryButton: "#1f3a5f",
-    primaryButtonHover: "#274b78",
-    outlineButtonHover: "#f1ead8",
-    walletItemHover: "rgba(31, 58, 95, 0.06)",
-    walletItemSelected: "#fffdf7",
-    modalOverlay: "rgba(26, 28, 34, 0.5)",
-    modalPrimary: "#f8f2e4",
-    modalSecondary: "#efe6d2",
-    iconButton: "transparent",
-    iconButtonHover: "#efe6d2",
-    dropdownMenu: "#f8f2e4",
-    dropdownMenuSeparator: "#e2d7bd"
-  },
-  borderColors: {
-    outlineButton: "#d8ccae"
-  },
-  colors: {
-    primaryButton: "#f8f2e4",
-    outlineButton: "#1f3a5f",
-    body: "#2b2a26",
-    bodyMuted: "#6f6a5f",
-    bodyDanger: "#a8442a",
-    iconButton: "#2b2a26"
-  },
-  radii: {
-    small: "4px",
-    medium: "7px",
-    large: "10px",
-    xlarge: "14px"
-  },
-  shadows: {
-    primaryButton: "0 2px 10px rgba(31, 58, 95, 0.22)",
-    walletItemSelected: "0 1px 4px rgba(43, 42, 38, 0.12)"
-  },
-  fontWeights: {
-    normal: "400",
-    medium: "500",
-    bold: "600"
-  },
-  fontSizes: {
-    small: "14px",
-    medium: "15px",
-    large: "18px",
-    xlarge: "22px"
-  },
-  typography: {
-    fontFamily: '"Newsreader", Georgia, "Times New Roman", serif',
-    fontStyle: "normal",
-    lineHeight: "1.35",
-    letterSpacing: "normal"
-  }
-} satisfies ThemeVars;
-
-function AccountBridge({ onAccount }: { onAccount?: AccountListener }) {
-  const account = useCurrentAccount();
-  useEffect(() => {
-    onAccount?.(account?.address ?? null);
-  }, [account, onAccount]);
-  return <ConnectButton className="wallet-connect-btn" connectText="Connect Wallet" />;
+function shortAddress(address: string): string {
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
-/**
- * Mount the wallet UI into `host`. `onAccount` (optional) fires with the active
- * address (or null when disconnected). Returns a teardown function.
- */
-export function mountWallet(host: HTMLElement, onAccount?: AccountListener): () => void {
+// ── Trigger button (horizontal, top bar) ──────────────────────────────────────
+function WalletButton({ onOpen }: { onOpen: () => void }) {
+  const { currentWallet } = useCurrentWallet();
+  const account = useCurrentAccount();
+
+  if (currentWallet && account) {
+    return (
+      <button className="wallet-tab is-connected" type="button" onClick={onOpen}>
+        <span className="wallet-tab-mark" aria-hidden="true">済</span>
+        <span className="wallet-tab-addr">{shortAddress(account.address)}</span>
+      </button>
+    );
+  }
+
+  return (
+    <button className="wallet-tab" type="button" onClick={onOpen}>
+      接続
+    </button>
+  );
+}
+
+// ── Connect / account modal ───────────────────────────────────────────────────
+function WalletModal({ onClose }: { onClose: () => void }) {
+  const wallets = useWallets();
+  const { currentWallet } = useCurrentWallet();
+  const account = useCurrentAccount();
+  const { mutateAsync: connectWallet } = useConnectWallet();
+  const { mutateAsync: disconnectWallet } = useDisconnectWallet();
+  const [connecting, setConnecting] = useState(false);
+
+  // Escape closes the modal (a11y escape route).
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function handleConnect(wallet: Wallet) {
+    try {
+      setConnecting(true);
+      await connectWallet({ wallet });
+      onClose();
+    } catch {
+      // user cancelled or wallet error — leave the modal open
+    } finally {
+      setConnecting(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    await disconnectWallet();
+    onClose();
+  }
+
+  return (
+    <div className="wallet-overlay" onClick={onClose}>
+      <div
+        className="wallet-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Wallet"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="wallet-modal-head">
+          <div>
+            <p className="eyebrow">{currentWallet ? "接続済み" : "ウォレット"}</p>
+            <h3>{currentWallet ? "Wallet" : "Select Wallet"}</h3>
+            {!currentWallet && <p className="wallet-modal-sub">Choose a wallet to connect.</p>}
+          </div>
+          <button className="wallet-modal-close" type="button" aria-label="Close" autoFocus onClick={onClose}>
+            ×
+          </button>
+        </header>
+
+        <div className="wallet-modal-body">
+          {currentWallet ? (
+            <div className="wallet-connected">
+              <div className="wallet-connected-id">
+                {currentWallet.icon && (
+                  <img src={currentWallet.icon} alt={currentWallet.name} width={48} height={48} />
+                )}
+                <p className="wallet-connected-name">{currentWallet.name}</p>
+              </div>
+
+              {account && (
+                <div className="wallet-address">
+                  <p className="wallet-address-label">Address</p>
+                  <p className="wallet-address-value">
+                    {account.address.slice(0, 10)}…{account.address.slice(-8)}
+                  </p>
+                </div>
+              )}
+
+              <button className="wallet-disconnect" type="button" onClick={handleDisconnect}>
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <div className="wallet-list">
+              {wallets.map((wallet) => (
+                <button
+                  key={wallet.name}
+                  className="wallet-list-item"
+                  type="button"
+                  disabled={connecting}
+                  onClick={() => handleConnect(wallet)}
+                >
+                  {wallet.icon && (
+                    <img src={wallet.icon} alt={wallet.name} width={36} height={36} />
+                  )}
+                  <span>
+                    <span className="wallet-list-name">{wallet.name}</span>
+                    <span className="wallet-list-sub">Connect {wallet.name}</span>
+                  </span>
+                </button>
+              ))}
+
+              {wallets.length === 0 && (
+                <div className="wallet-empty">
+                  <p>No wallets detected.</p>
+                  <p className="wallet-empty-hint">Install a Sui wallet extension to continue.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WalletIsland() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <WalletButton onOpen={() => setOpen(true)} />
+      {open && <WalletModal onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+/** Mount the wallet UI (button + modal) into `host`. Returns a teardown function. */
+export function mountWallet(host: HTMLElement): () => void {
   const root: Root = createRoot(host);
   root.render(
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-        <WalletProvider autoConnect theme={kamiTheme}>
-          <AccountBridge onAccount={onAccount} />
+        <WalletProvider autoConnect>
+          <WalletIsland />
         </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>

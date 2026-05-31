@@ -147,19 +147,250 @@ h1 {
   }
 }
 
-/* Size + focus the dapp-kit Connect button to sit comfortably in the bar.
-   dapp-kit puts data-dapp-kit on the button itself and styles it with a single
-   (0,1,0) vanilla-extract class, so `.wallet-mount button` (0,1,1) wins without
-   !important. Scoped to .wallet-mount so only the top-bar button is affected. */
-.wallet-mount button {
+/* Custom kami wallet trigger: a sharp-cornered ink tab that inverts on hover. */
+.wallet-tab {
   min-height: 44px;
-  padding: 0 20px;
-  font-weight: 500;
+  padding: 0 22px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  letter-spacing: 0.3em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 450ms ease, color 450ms ease;
 }
 
-.wallet-mount button:focus-visible {
+.wallet-tab:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.wallet-tab:focus-visible {
   outline: 2px solid var(--ink-blue);
   outline-offset: 2px;
+}
+
+.wallet-tab.is-connected {
+  letter-spacing: normal;
+  padding: 0 16px;
+}
+
+.wallet-tab-mark {
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.wallet-tab-addr {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.86rem;
+}
+
+/* ── Connect modal ──────────────────────────────────────────────────────────── */
+.wallet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(26, 28, 34, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.wallet-modal {
+  width: 440px;
+  max-width: 92vw;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f8f2e4;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(26, 28, 34, 0.4);
+}
+
+.wallet-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 6px;
+}
+
+.wallet-modal-head h3 {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wallet-modal-sub {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.wallet-modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 8px;
+  min-height: 0;
+}
+
+.wallet-modal-close:hover {
+  color: var(--ink);
+}
+
+.wallet-modal-body {
+  padding: 16px 24px 24px;
+  overflow-y: auto;
+}
+
+.wallet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wallet-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.wallet-list-item:hover {
+  background: #fffdf7;
+  border-color: #d8ccae;
+}
+
+.wallet-list-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.wallet-list-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.wallet-list-name {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.wallet-list-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.wallet-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--muted);
+}
+
+.wallet-empty-hint {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--line);
+}
+
+.wallet-connected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0;
+}
+
+.wallet-connected-id {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallet-connected-id img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.wallet-connected-name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.wallet-address {
+  width: 100%;
+  padding: 12px 18px;
+  background: #fffdf7;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.wallet-address-label {
+  margin: 0 0 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.wallet-address-value {
+  margin: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.wallet-disconnect {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--ink);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.wallet-disconnect:hover {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .map-frame {
