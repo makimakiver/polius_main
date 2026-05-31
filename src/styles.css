@@ -7,7 +7,11 @@
   --line: oklch(0.86 0.018 82);
   --gold: oklch(0.72 0.13 82);
   --blue: oklch(0.58 0.1 238);
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  /* kami "civilised" accents: ink-blue + serif-led hierarchy */
+  --ink-blue: #1f3a5f;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-family: var(--sans);
   background: var(--paper);
   color: var(--ink);
 }
@@ -80,42 +84,20 @@ button:hover {
 
 h1 {
   margin: 0;
-  line-height: 1.08;
-  font-size: 2.25rem;
-  font-weight: 760;
+  font-family: var(--serif);
+  line-height: 1.04;
+  font-size: 2.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-blue);
 }
 
 .summary {
-  margin: -10px 0 0;
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: 1.02rem;
   color: var(--muted);
   line-height: 1.5;
-}
-
-.wallet-box {
-  margin-top: auto;
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.wallet-box #wallet {
-  display: grid;
-}
-
-.wallet-box #wallet button {
-  width: 100%;
-  justify-content: center;
-}
-
-.wallet-status {
-  margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.4;
-  color: var(--muted);
-  word-break: break-all;
 }
 
 .workspace {
@@ -129,12 +111,55 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 44px;
 }
 
 #sidebar-toggle {
-  min-width: 38px;
+  min-width: 44px;
+  min-height: 44px;
   font-size: 1.05rem;
   line-height: 1;
+}
+
+.toolbar-title {
+  color: var(--ink-blue);
+}
+
+/* Wallet lives in the top bar, pushed to the right with its network label. */
+.wallet-mount {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wallet-network {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@media (max-width: 520px) {
+  .wallet-network {
+    display: none;
+  }
+}
+
+/* Size + focus the dapp-kit Connect button to sit comfortably in the bar.
+   dapp-kit puts data-dapp-kit on the button itself and styles it with a single
+   (0,1,0) vanilla-extract class, so `.wallet-mount button` (0,1,1) wins without
+   !important. Scoped to .wallet-mount so only the top-bar button is affected. */
+.wallet-mount button {
+  min-height: 44px;
+  padding: 0 20px;
+  font-weight: 500;
+}
+
+.wallet-mount button:focus-visible {
+  outline: 2px solid var(--ink-blue);
+  outline-offset: 2px;
 }
 
 .map-frame {

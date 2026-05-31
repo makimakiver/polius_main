@@ -1,6 +1,5 @@
 import { PolliusScene } from "./scene3d";
 import { mountWallet } from "./wallet";
-import { shortAddress } from "./format";
 import "./styles.css";
 
 const SIDEBAR_KEY = "pollius:sidebar";
@@ -14,17 +13,16 @@ app.innerHTML = `
       <p class="eyebrow">OSS Terrarium</p>
       <h1>Pollius</h1>
       <p class="summary">A living world you grow, then let go.</p>
-      <div class="wallet-box">
-        <span class="eyebrow">Sui Wallet · Testnet</span>
-        <div id="wallet"></div>
-        <p id="wallet-status" class="wallet-status">Not connected</p>
-      </div>
     </aside>
 
     <section class="workspace">
       <header class="toolbar">
         <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar">☰</button>
-        <span class="eyebrow">Living World</span>
+        <span class="eyebrow toolbar-title">Living World</span>
+        <div class="wallet-mount">
+          <span class="wallet-network">Sui · Testnet</span>
+          <div id="wallet"></div>
+        </div>
       </header>
       <div class="map-frame">
         <div id="world-3d" class="world-3d" aria-label="3D Pollius world"></div>
@@ -53,13 +51,9 @@ if (worldHost) {
   scene.start();
 }
 
-// Wallet island → status line bridge.
+// Wallet island. The dapp-kit button shows the connected address itself, so the
+// page no longer renders a separate status line.
 const walletHost = document.querySelector<HTMLElement>("#wallet");
 if (walletHost) {
-  mountWallet(walletHost, (address) => {
-    const status = document.querySelector<HTMLElement>("#wallet-status");
-    if (status) {
-      status.textContent = address ? `Connected · ${shortAddress(address)}` : "Not connected";
-    }
-  });
+  mountWallet(walletHost);
 }
